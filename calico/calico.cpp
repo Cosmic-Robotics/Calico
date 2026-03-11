@@ -479,7 +479,16 @@ PYBIND11_MODULE(_calico, m) {
                throw std::runtime_error(std::string("Error: ") +
                                         std::string(pairs.status().message()));
              }
-             return pairs.value();
+             std::unordered_map<
+                 std::string,
+                 std::vector<std::pair<CameraMeasurement, Eigen::Vector2d>>>
+                 result;
+             for (const auto& [imager, imager_pairs] : pairs.value()) {
+               result[imager] =
+                   std::vector<std::pair<CameraMeasurement, Eigen::Vector2d>>(
+                       imager_pairs.begin(), imager_pairs.end());
+             }
+             return result;
            })
       .def("GetMeasurementIdToMeasurement",
            [](MultiCamera& self) {
