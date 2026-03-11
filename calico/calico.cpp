@@ -378,24 +378,26 @@ PYBIND11_MODULE(_calico, m) {
              }
              return model.value();
            })
+
       .def("SetIntrinsics",
-           [](MultiCamera& self, const std::string& imager,
-              const Eigen::VectorXd& intrinsics) {
-             const auto status = self.SetIntrinsics(imager, intrinsics);
+           [VecToEigen](MultiCamera& self, const std::string& imager,
+                        const std::vector<double>& intrinsics) {
+             const auto status =
+                 self.SetIntrinsics(imager, VecToEigen(intrinsics));
              if (!status.ok()) {
                throw std::runtime_error(std::string("Error: ") +
                                         std::string(status.message()));
              }
            })
       .def("GetIntrinsics",
-           [](const MultiCamera& self, const std::string& imager) {
+           [EigenToVec](const MultiCamera& self, const std::string& imager) {
              const auto intrinsics = self.GetIntrinsics(imager);
              if (!intrinsics.status().ok()) {
                throw std::runtime_error(
                    std::string("Error: ") +
                    std::string(intrinsics.status().message()));
              }
-             return intrinsics.value();
+             return EigenToVec(intrinsics.value());
            })
       .def("SetLatency",
            [](MultiCamera& self, const std::string& imager, double latency) {

@@ -161,7 +161,11 @@ absl::StatusOr<int> MultiCamera::AddResidualsToProblem(
           rigidbody_ref->model_definition.at(observation_id.feature_id);
       // Construct a cost function and supply parameters for this residual.
       std::vector<double*> parameters;
-
+      std::cerr << "Adding cost function for " << imager << " at:\n"
+                << "  stamp: " << observation_id.stamp << "\n"
+                << "  image_id: " << observation_id.image_id << "\n"
+                << "  model_id: " << observation_id.model_id << "\n"
+                << "  feature_id: " << observation_id.feature_id << std::endl;
       ceres::CostFunction* cost_function =
           ImagerCostFunctor::CreateCostFunction(
               measurement.pixel, sigma_,
