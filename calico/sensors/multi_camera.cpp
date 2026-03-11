@@ -157,6 +157,14 @@ absl::StatusOr<int> MultiCamera::AddResidualsToProblem(
       // Get the right rigidbody reference from the world model.
       std::unique_ptr<RigidBody>& rigidbody_ref =
           world_model.rigidbodies().at(rigidbody_id);
+      if (!rigidbody_ref->model_definition.contains(
+              observation_id.feature_id)) {
+        return absl::FailedPreconditionError(absl::StrCat(
+            "Attempted to create cost function from an observation for a model "
+            "point with id ",
+            observation_id.feature_id, " that does not exist in rigidbody id ",
+            rigidbody_id));
+      }
       Eigen::Vector3d& t_model_point =
           rigidbody_ref->model_definition.at(observation_id.feature_id);
       // Construct a cost function and supply parameters for this residual.
