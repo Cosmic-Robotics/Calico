@@ -123,6 +123,10 @@ add_library(
   camera_models
   ${CMAKE_CURRENT_SOURCE_DIR}/calico/sensors/camera_models.cpp
 )
+target_include_directories(camera_models PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(
   camera_models
   absl::statusor
@@ -285,7 +289,7 @@ install(
 # Install python library.
 set(
   PYTHON_INSTALL_DIR
-  /usr/local/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/dist-packages/calico
+  local/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/dist-packages/calico
 )
 install(
   TARGETS _calico
