@@ -289,7 +289,7 @@ install(
 # Install python library.
 set(
   PYTHON_INSTALL_DIR
-  local/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/dist-packages/calico
+  /usr/local/lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/dist-packages/calico
 )
 install(
   TARGETS _calico
