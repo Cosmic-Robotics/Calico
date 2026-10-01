@@ -5,6 +5,7 @@
 #include "calico/sensors/gyroscope.h"
 #include "calico/typedefs.h"
 
+#include <stdexcept>
 #include <string>
 
 #include "absl/status/status.h"
@@ -425,12 +426,30 @@ PYBIND11_MODULE(_calico, m) {
          },
          py::arg("options") = DefaultSolverOptions());
 
+  // AprilGridConfig struct.
+  py::class_<AprilGridConfig>(m, "AprilGridConfig")
+    .def(py::init<>())
+    .def_readwrite("tagCols", &AprilGridConfig::tagCols)
+    .def_readwrite("tagRows", &AprilGridConfig::tagRows)
+    .def_readwrite("tagSize", &AprilGridConfig::tagSize)
+    .def_readwrite("tagSpacing", &AprilGridConfig::tagSpacing)
+    .def_readwrite("startId", &AprilGridConfig::startId);
+
   // AprilGridDetector class.
   py::class_<AprilGridDetector>(m, "AprilGridDetector")
     .def(py::init<std::string>())
+    .def(py::init<const AprilGridConfig&>())
     .def("Detect",
-         [](AprilGridDetector& self, const py::array_t<uint8_t>& img) {
+         // c_style makes pybind copy a non-contiguous array into a contiguous
+         // one, which the cv::Mat below assumes.
+         [](AprilGridDetector& self,
+            const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>&
+                img) {
            py::buffer_info buf = img.request();
+           if (buf.ndim != 2) {
+             throw std::invalid_argument(
+                 "AprilGridDetector.Detect expects a 2D grayscale image.");
+           }
            cv::Mat mat(buf.shape[0], buf.shape[1], CV_8UC1,
                        static_cast<void*>(buf.ptr));
            return self.Detect(mat);
