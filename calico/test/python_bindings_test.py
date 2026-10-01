@@ -4,6 +4,17 @@ import numpy as np
 import unittest
 import copy
 
+def _render_tag36h11(code, pixels_per_bit):
+    """Renders a 36h11 tag with the 2-bit black border AprilGridDetector expects,
+    centered on a white margin 4 bits wide."""
+    bits = [(code >> (35 - i)) & 1 for i in range(36)]
+    tag = np.zeros((10, 10), dtype=np.uint8)
+    tag[2:8, 2:8] = np.array(bits, dtype=np.uint8).reshape(6, 6) * 255
+    image = np.full((18, 18), 255, dtype=np.uint8)
+    image[4:14, 4:14] = tag
+    return np.kron(image, np.ones((pixels_per_bit, pixels_per_bit), dtype=np.uint8))
+
+
 class TestCalicoPythonBindings(unittest.TestCase):
 
     def test_Pose3d(self):
@@ -168,6 +179,42 @@ class TestCalicoPythonBindings(unittest.TestCase):
                         rigidbody.world_pose_is_constant)
         self.assertTrue(rigidbody_model_definition_is_constant,
                         rigidbody.model_definition_is_constant)
+
+    def test_AprilGridDetector(self):
+        config = calico.AprilGridConfig()
+        config.tagCols = 2
+        config.tagRows = 1
+        config.tagSize = 0.1
+        config.tagSpacing = 0.3
+        config.startId = 3
+        detector = calico.AprilGridDetector(config)
+
+        # Tags 3 and 4, four corners each, with tag 4 one tag plus spacing along x.
+        model_definition = detector.GetRigidBodyDefinition().model_definition
+        self.assertEqual(sorted(model_definition), list(range(12, 20)))
+        np.testing.assert_allclose(model_definition[16], [0.13, 0.0, 0.0])
+
+        # Tag 3, rendered at 10 pixels per bit. Its outer edges fall between pixels 39
+        # and 40, and between pixels 139 and 140.
+        pixels_per_bit = 10
+        image = _render_tag36h11(0xe479e9c98, pixels_per_bit)
+        detections = detector.Detect(image)
+        self.assertEqual(sorted(detections), [12, 13, 14, 15])
+        for pixel in detections.values():
+            for coordinate in pixel:
+                self.assertTrue(
+                    min(abs(coordinate - 39.5), abs(coordinate - 139.5)) < 0.5)
+
+        # A non-contiguous view of the same pixels detects the same corners.
+        strided = np.repeat(image, 2, axis=1)[:, ::2]
+        self.assertFalse(strided.flags.c_contiguous)
+        strided_detections = detector.Detect(strided)
+        self.assertEqual(sorted(strided_detections), sorted(detections))
+        for feature_id, pixel in detections.items():
+            np.testing.assert_allclose(strided_detections[feature_id], pixel)
+
+        with self.assertRaises(ValueError):
+            detector.Detect(np.zeros((10, 10, 3), dtype=np.uint8))
 
     def test_WorldModel(self):
         world_model = calico.WorldModel()
